@@ -80,7 +80,7 @@ func main() {
 func startListen(port string) {
 	listener, err := net.Listen("tcp", "0.0.0.0:"+port)
 	if err != nil {
-		log.Println("监听失败 Error:", err)
+		log.Println("监听失败 Error=", err)
 		return
 	}
 	defer listener.Close()
@@ -88,7 +88,7 @@ func startListen(port string) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("连接出错 Error:", err)
+			log.Println("连接出错 Error=", err)
 			continue
 		}
 		onlineNode := OnlineNode{

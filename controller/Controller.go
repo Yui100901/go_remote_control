@@ -92,7 +92,7 @@ func (c *Controller) GetCommand() {
 		}
 		//如果用户输入的是 exit就退出
 		line = strings.Trim(line, " \r\n")
-		log.Println("发送命令=", line)
+		log.Println("命令=", line)
 		if DestinationAddr == "" {
 			fmt.Println("Please set destination!")
 		}
@@ -134,18 +134,20 @@ func (c *Controller) GetCommand() {
 }
 
 func (c *Controller) GetResult() {
-	//接收结果
-	res := <-c.ReadChan
-	if res.Type == "onlineList" {
-		if list, ok := res.Content.([]string); ok == true {
-			for _, v := range list {
-				if v != "" {
-					onlineMap[v] = true
+	for {
+		//接收结果
+		res := <-c.ReadChan
+		if res.Type == "onlineList" {
+			if list, ok := res.Content.([]string); ok == true {
+				for _, v := range list {
+					if v != "" {
+						onlineMap[v] = true
+					}
 				}
+				fmt.Println("OnLine:", list)
 			}
-			fmt.Println("OnLine:", list)
+		} else {
+			fmt.Println("结果", res.Content)
 		}
-	} else {
-		fmt.Println(res.Content)
 	}
 }

