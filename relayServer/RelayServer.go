@@ -69,8 +69,7 @@ func (on *OnlineNode) handle() {
 
 func main() {
 
-	log.Println("服务器开始监听....")
-	//tcp协议6666端口监听
+	log.Println("服务器开始监听......")
 
 	go startListen(ControllerPort)
 	go startListen(CommandServerPort)
@@ -81,7 +80,7 @@ func main() {
 func startListen(port string) {
 	listener, err := net.Listen("tcp", "0.0.0.0:"+port)
 	if err != nil {
-		log.Println("监听失败 err=", err)
+		log.Println("监听失败 Error:", err)
 		return
 	}
 	defer listener.Close()
@@ -89,10 +88,9 @@ func startListen(port string) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("Accept() err=", err)
+			log.Println("连接出错 Error:", err)
 			continue
 		}
-		log.Printf("Accept() suc con=%v 客户端ip=%v\n", conn, conn.RemoteAddr().String())
 		onlineNode := OnlineNode{
 			Node: base.Node{
 				Conn:      conn,
@@ -104,11 +102,12 @@ func startListen(port string) {
 				NodeType:  "",
 			},
 		}
-		fmt.Println(port)
 		switch port {
 		case "9900":
+			log.Printf("控制端连接ip=%v\n", onlineNode.Addr)
 			controllerMap.Store(onlineNode.Addr, onlineNode)
 		case "9901":
+			log.Printf("命令服务连接ip=%v\n", onlineNode.Addr)
 			commandServerMap.Store(onlineNode.Addr, onlineNode)
 		}
 		go onlineNode.Read()

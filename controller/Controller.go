@@ -20,6 +20,7 @@ const (
 var (
 	ServerAddr      string
 	DestinationAddr string
+	onlineMap       = make(map[string]bool)
 )
 
 type Controller struct {
@@ -43,6 +44,7 @@ func main() {
 	go controller.Read()
 	go controller.Write()
 	go controller.GetCommand()
+	go controller.GetResult()
 	go controller.keepAlive()
 
 	select {}
@@ -81,8 +83,6 @@ func (c *Controller) keepAlive() {
 func (c *Controller) GetCommand() {
 	reader := bufio.NewReader(os.Stdin) //os.Stdin 代表标准输入[终端]
 
-	var onlineMap = make(map[string]bool)
-
 	for {
 		//从终端读取用户命令
 		fmt.Print("Remote@", DestinationAddr, ">")
@@ -92,7 +92,7 @@ func (c *Controller) GetCommand() {
 		}
 		//如果用户输入的是 exit就退出
 		line = strings.Trim(line, " \r\n")
-		log.Println(line)
+		log.Println("发送命令=", line)
 		if DestinationAddr == "" {
 			fmt.Println("Please set destination!")
 		}
@@ -129,17 +129,23 @@ func (c *Controller) GetCommand() {
 		}
 		//发送命令
 		c.WriteChan <- cmd
-		//接收结果
-		res := <-c.ReadChan
-		if res.Type == "onlineList" {
-			if list, ok := res.Content.([]string); ok == true {
-				for _, v := range list {
-					if v != "" {
-						onlineMap[v] = true
-					}
+
+	}
+}
+
+func (c *Controller) GetResult() {
+	//接收结果
+	res := <-c.ReadChan
+	if res.Type == "onlineList" {
+		if list, ok := res.Content.([]string); ok == true {
+			for _, v := range list {
+				if v != "" {
+					onlineMap[v] = true
 				}
-				fmt.Println("OnLine:", list)
 			}
+			fmt.Println("OnLine:", list)
 		}
+	} else {
+		fmt.Println(res.Content)
 	}
 }
