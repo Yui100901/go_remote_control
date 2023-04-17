@@ -26,44 +26,51 @@ type OnlineNode struct {
 
 func (on *OnlineNode) handle() {
 	for {
-		msg := <-on.ReadChan
-		switch msg.Type {
-		case "cmd":
-			if msg.Dst != "" {
-				dstNode, _ := commandServerMap.Load(msg.Dst)
+		select {
+		case msg := <-on.ReadChan:
+			switch msg.Type {
+			case "cmd":
+				if msg.Dst != "" {
+					dstNode, _ := commandServerMap.Load(msg.Dst)
+					if dn, ok := dstNode.(OnlineNode); ok == true {
+						dn.WriteChan <- msg
+					}
+				} else {
+					var content []string
+					commandServerMap.Range(func(k, v any) bool {
+						if n, ok := v.(OnlineNode); ok == true {
+							content = append(content, n.Addr)
+						} else {
+							fmt.Print("false")
+						}
+						return true
+					})
+					res := base.Message{
+						Type:       "onlineList",
+						CreateTime: time.Now(),
+						ModifyTime: time.Now(),
+						Src:        msg.Dst,
+						Dst:        msg.Src,
+						Content:    content,
+						Log:        nil,
+					}
+					on.WriteChan <- res
+					log.Println(res)
+				}
+			case "res":
+				dstNode, _ := controllerMap.Load(msg.Dst)
 				if dn, ok := dstNode.(OnlineNode); ok == true {
 					dn.WriteChan <- msg
 				}
-			} else {
-				var content []string
-				commandServerMap.Range(func(k, v any) bool {
-					if n, ok := v.(OnlineNode); ok == true {
-						content = append(content, n.Addr)
-					} else {
-						fmt.Print("false")
-					}
-					return true
-				})
-				res := base.Message{
-					Type:       "onlineList",
-					CreateTime: time.Now(),
-					ModifyTime: time.Now(),
-					Src:        msg.Dst,
-					Dst:        msg.Src,
-					Content:    content,
-					Log:        nil,
-				}
-				on.WriteChan <- res
-				log.Println(res)
+			case "alive":
 			}
-		case "res":
-			dstNode, _ := controllerMap.Load(msg.Dst)
-			if dn, ok := dstNode.(OnlineNode); ok == true {
-				dn.WriteChan <- msg
-			}
-		case "alive":
-			//log.Println(msg.Content)
+		case <-time.After(100 * time.Second):
+			//100秒超时后关闭
+			on.Conn.Close()
+			controllerMap.Delete(on.Addr)
+			commandServerMap.Delete(on.Addr)
 		}
+
 	}
 }
 

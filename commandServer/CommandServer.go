@@ -65,11 +65,12 @@ func init() {
 	RuntimeEnvironment = runtime.GOOS //获取当前运行的系统环境
 	switch RuntimeEnvironment {
 	case "windows":
+		//隐藏终端窗口
 	//修改注册表实现开机自动启动
-	//keyname := `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` //自启动注册表路径
-	//valuename := `SystemStartup`                                                  //伪装注册表名
-	//regtype := `REG_SZ`
-	//regdata, _ := os.Executable()
+	//keyName := `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` //自启动注册表路径
+	//valueName := `SystemStartup`                                                  //伪装注册表名
+	//regType := `REG_SZ`
+	//regData, _ := os.Executable()
 	//go execCommand(fmt.Sprintf(`reg add %s /v %s /t %s /d "%s"`, keyname, valuename, regtype, regdata))
 	case "linux":
 
