@@ -3,7 +3,8 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
-	"go_remote_control/base"
+	"go_remote_control/message"
+	"go_remote_control/node"
 	"log"
 	"net"
 	"os/exec"
@@ -22,7 +23,7 @@ var (
 )
 
 type CommandServer struct {
-	base.Node
+	node.Node
 }
 
 func (cs *CommandServer) handleCommand() {
@@ -32,7 +33,7 @@ func (cs *CommandServer) handleCommand() {
 		log.Print("Command:", cmd, "\n")
 		content := execCommand(cmd)
 		//写入回应
-		res := base.Message{
+		res := &message.Message{
 			Type:       "res",
 			CreateTime: time.Now(),
 			ModifyTime: time.Now(),
@@ -41,13 +42,13 @@ func (cs *CommandServer) handleCommand() {
 			Content:    content,
 			Log:        nil,
 		}
-		cs.WriteChan <- res
+		cs.WriteChan <- *res
 	}
 }
 
 func (cs *CommandServer) keepAlive() {
 	for {
-		msg := base.Message{
+		msg := &message.Message{
 			Type:       "alive",
 			CreateTime: time.Now(),
 			ModifyTime: time.Now(),
@@ -56,7 +57,7 @@ func (cs *CommandServer) keepAlive() {
 			Content:    cs.Addr + "alive",
 			Log:        nil,
 		}
-		cs.WriteChan <- msg
+		cs.WriteChan <- *msg
 		time.Sleep(10 * time.Second)
 	}
 }
@@ -97,12 +98,12 @@ func main() {
 	conn := getConn()
 	defer conn.Close()
 
-	commandServer := CommandServer{
-		Node: base.Node{
+	commandServer := &CommandServer{
+		Node: node.Node{
 			Conn:      conn,
 			Addr:      conn.LocalAddr().String(),
-			ReadChan:  make(chan base.Message),
-			WriteChan: make(chan base.Message),
+			ReadChan:  make(chan message.Message),
+			WriteChan: make(chan message.Message),
 			Enc:       gob.NewEncoder(conn),
 			Dec:       gob.NewDecoder(conn),
 		},

@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"encoding/gob"
 	"fmt"
-	"go_remote_control/base"
+	"go_remote_control/message"
+	"go_remote_control/node"
 	"log"
 	"net"
 	"os"
@@ -24,18 +25,18 @@ var (
 )
 
 type Controller struct {
-	base.Node
+	*node.Node
 }
 
 func main() {
 	//tcp连接建立
 	conn := getConn()
-	controller := Controller{
-		Node: base.Node{
+	controller := &Controller{
+		Node: &node.Node{
 			Conn:      conn,
 			Addr:      conn.LocalAddr().String(),
-			ReadChan:  make(chan base.Message),
-			WriteChan: make(chan base.Message),
+			ReadChan:  make(chan message.Message),
+			WriteChan: make(chan message.Message),
 			Enc:       gob.NewEncoder(conn),
 			Dec:       gob.NewDecoder(conn),
 		},
@@ -66,7 +67,7 @@ func getConn() net.Conn {
 
 func (c *Controller) keepAlive() {
 	for {
-		msg := base.Message{
+		msg := &message.Message{
 			Type:       "alive",
 			CreateTime: time.Now(),
 			ModifyTime: time.Now(),
@@ -75,7 +76,7 @@ func (c *Controller) keepAlive() {
 			Content:    c.Addr + "alive",
 			Log:        nil,
 		}
-		c.WriteChan <- msg
+		c.WriteChan <- *msg
 		time.Sleep(10 * time.Second)
 	}
 }
@@ -118,7 +119,7 @@ func (c *Controller) GetCommand() {
 		case "":
 			continue
 		}
-		cmd := base.Message{
+		cmd := &message.Message{
 			Type:       "cmd",
 			CreateTime: time.Now(),
 			ModifyTime: time.Now(),
@@ -128,7 +129,7 @@ func (c *Controller) GetCommand() {
 			Log:        nil,
 		}
 		//发送命令
-		c.WriteChan <- cmd
+		c.WriteChan <- *cmd
 
 	}
 }

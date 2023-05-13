@@ -3,7 +3,8 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
-	"go_remote_control/base"
+	"go_remote_control/message"
+	"go_remote_control/node"
 	"log"
 	"net"
 	"sync"
@@ -21,7 +22,7 @@ var (
 )
 
 type OnlineNode struct {
-	base.Node
+	node.Node
 }
 
 func (on *OnlineNode) handle() {
@@ -45,7 +46,7 @@ func (on *OnlineNode) handle() {
 						}
 						return true
 					})
-					res := base.Message{
+					res := message.Message{
 						Type:       "onlineList",
 						CreateTime: time.Now(),
 						ModifyTime: time.Now(),
@@ -98,12 +99,12 @@ func startListen(port string) {
 			log.Println("连接出错 Error=", err)
 			continue
 		}
-		onlineNode := OnlineNode{
-			Node: base.Node{
+		onlineNode := &OnlineNode{
+			Node: node.Node{
 				Conn:      conn,
 				Addr:      conn.RemoteAddr().String(),
-				ReadChan:  make(chan base.Message),
-				WriteChan: make(chan base.Message),
+				ReadChan:  make(chan message.Message),
+				WriteChan: make(chan message.Message),
 				Enc:       gob.NewEncoder(conn),
 				Dec:       gob.NewDecoder(conn),
 				NodeType:  "",
@@ -113,9 +114,11 @@ func startListen(port string) {
 		case "9900":
 			log.Printf("控制端连接ip=%v\n", onlineNode.Addr)
 			controllerMap.Store(onlineNode.Addr, onlineNode)
+			onlineNode.NodeType = "controller"
 		case "9901":
 			log.Printf("命令服务连接ip=%v\n", onlineNode.Addr)
 			commandServerMap.Store(onlineNode.Addr, onlineNode)
+			onlineNode.NodeType = "commandServer"
 		}
 		go onlineNode.Read()
 		go onlineNode.Write()
