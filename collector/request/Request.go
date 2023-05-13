@@ -10,7 +10,12 @@ type Rule struct {
 	//Form    map[string]string //表单
 }
 
-func (n *Rule) NewRequest() *http.Request {
+type Request struct {
+	*Rule
+	Req *http.Request
+}
+
+func (n *Request) GenerateRequest() {
 	req, _ := http.NewRequest(n.Method, n.Url, nil)
 	for k, v := range n.Headers {
 		req.Header.Set(k, v)
@@ -20,5 +25,5 @@ func (n *Rule) NewRequest() *http.Request {
 		query.Add(k, v)
 	}
 	req.URL.RawQuery = query.Encode()
-	return req
+	n.Req = req
 }

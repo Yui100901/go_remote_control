@@ -5,12 +5,22 @@ import (
 	"regexp"
 )
 
+type Rule struct {
+	Regex []string
+}
+
 type Parse interface {
+	Preprocess(d *data.Data)
 	GetLink(d *data.Data)
 	GetImageLink(d *data.Data)
 }
 
 type Parser struct {
+	*Rule
+}
+
+func (p *Parser) Preprocess(d *data.Data) {
+
 }
 
 func (p *Parser) GetImageLink(d *data.Data) {

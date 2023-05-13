@@ -17,15 +17,15 @@ type Scheduler struct {
 var client = &http.Client{}
 
 type Collector struct {
-	Req *http.Request
-	*data.Data
-	*parser.Parser
-	Info string
+	Request *request.Request
+	Data    *data.Data
+	Parser  *parser.Parser
+	Info    string
 }
 
 func (c *Collector) Collect() {
 	//获取请求网址
-	resp, err := client.Do(c.Req)
+	resp, err := client.Do(c.Request.Req)
 	if err != nil {
 		c.Info = err.Error()
 		return
@@ -39,7 +39,7 @@ func (c *Collector) Collect() {
 
 	//fmt.Println(c.RawHtml)
 	c.Info = "success"
-	c.GetLink(c.Data)
+	c.Parser.GetLink(c.Data)
 }
 
 //func (c *Collector) Parse() {
@@ -58,15 +58,16 @@ func main() {
 	wg := sync.WaitGroup{}
 	for i := 0; i < 26; i++ {
 		wg.Add(1)
-		req := &request.Rule{
-			Method: "GET",
-			Url:    baseUrl,
-		}
-		collector := &Collector{
-			Req: req.NewRequest(),
+		c := Collector{
+			Request: &request.Request{
+				Rule: &request.Rule{
+					Method: "GET",
+					Url:    baseUrl,
+				},
+			},
 		}
 		go func() {
-			collector.Collect()
+			c.Collect()
 			wg.Done()
 		}()
 		wg.Wait()
@@ -74,7 +75,7 @@ func main() {
 	}
 	//var reqList []*http.Request
 	//for i := 0; i < 26; i++ {
-	//	req, _ := http.NewRequest("GET", fmt.Sprintf("%s%c.html", baseUrl, byte(65+i)), nil)
+	//	req, _ := http.GenerateRequest("GET", fmt.Sprintf("%s%c.html", baseUrl, byte(65+i)), nil)
 	//	reqList = append(reqList, req)
 	//}
 	//wg := sync.WaitGroup{}
