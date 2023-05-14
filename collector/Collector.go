@@ -7,125 +7,76 @@ import (
 	"go_remote_control/collector/request"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
 
-type Scheduler struct {
-}
-
 var client = &http.Client{}
 
 type Collector struct {
-	Request *request.Request
-	Data    *data.Data
-	Parser  *parser.Parser
-	Info    string
+	Request *request.Request //网页访问请求
+	Parser  *parser.Parser   //解析器
+	Data    *data.Data       //数据
+	Info    string           //状态信息
 }
 
 func (c *Collector) Collect() {
-	//获取请求网址
+	//请求构造
+	c.Request.GenerateRequest()
+	//请求发起
 	resp, err := client.Do(c.Request.Req)
 	if err != nil {
 		c.Info = err.Error()
 		return
 	}
-	//爬取的内容在Body，结束时应该关闭
+	//数据读取，延迟关闭body
 	defer resp.Body.Close()
 	temp, _ := io.ReadAll(resp.Body)
-	c.Data = &data.Data{
-		RawHtml: string(temp),
-	}
-
-	//fmt.Println(c.RawHtml)
-	c.Info = "success"
+	c.Data.RawHtml = string(temp)
+	//数据解析
 	c.Parser.GetLink(c.Data)
+	c.Info = "success"
 }
-
-//func (c *Collector) Parse() {
-//	temp := strings.ReplaceAll(c.data.RawHtml, "\n", "")
-//	for _, regex := range c.Regex {
-//		re := regexp.MustCompile(regex)
-//		c.data.ParsedData = re.FindAllString(temp, -1)
-//	}
-//}
 
 func main() {
 	baseUrl := "http://www.iyanghua.com/huahui/"
 	//baseUrl := "http://127.0.0.1:20001/flowerKnowledge/getAllFlowerKnowledgeData"
 	start := time.Now()
-	//c := http.Client{}
 	wg := sync.WaitGroup{}
-	for i := 0; i < 26; i++ {
+	var dataList []*data.Data
+	var urlList []string
+	var collectorList []Collector
+	for i := 0; i < 1; i++ {
+		urlList = append(urlList, fmt.Sprintf("%s%c.html", baseUrl, byte(65+i)))
+	}
+	for _, v := range urlList {
 		wg.Add(1)
 		c := Collector{
 			Request: &request.Request{
 				Rule: &request.Rule{
 					Method: "GET",
-					Url:    baseUrl,
+					Url:    v,
 				},
 			},
+			Data: &data.Data{},
 		}
+		collectorList = append(collectorList, c)
 		go func() {
 			c.Collect()
 			wg.Done()
 		}()
-		wg.Wait()
-		//fmt.Println(collector.data)
 	}
-	//var reqList []*http.Request
-	//for i := 0; i < 26; i++ {
-	//	req, _ := http.GenerateRequest("GET", fmt.Sprintf("%s%c.html", baseUrl, byte(65+i)), nil)
-	//	reqList = append(reqList, req)
-	//}
-	//wg := sync.WaitGroup{}
-	//for _, req := range reqList {
-	//	wg.Add(1)
-	//	go func() {
-	//		resp, err := client.Do(req)
-	//		if err != nil {
-	//			return
-	//		}
-	//		html, _ := io.ReadAll(resp.Body)
-	//		fmt.Println(string(html))
-	//		wg.Done()
-	//	}()
-	//}
-	//c := &Collector{
-	//	req: RequestRule{
-	//		Url: baseUrl,
-	//	},
-	//}
-	//wg.Wait()
-	//var urlList []string
-	////Do something
-	//for i := 0; i < 26; i++ {
-	//	collector := &Collector{
-	//		req: RequestRule{
-	//			Client: &http.Client{},
-	//			Url:    fmt.Sprintf("%s%c.html", baseUrl, byte(65+i)),
-	//			Headers: map[string]string{
-	//				"1": "2",
-	//				"3": "4",
-	//			},
-	//		},
-	//		data: Data{},
-	//	}
-	//	collector.Collect()
-	//	reLink := regexp.MustCompile(`src="(.*?)"`)
-	//	urls := reLink.FindAllString(collector.data.RawHtml, -1)
-	//	urlList = append(urlList, urls...)
-	//	fmt.Println(collector.Info)
-	//}
-	//
-	//fmt.Println(urlList)
-	//collector := Collector{
-	//	Client: http.Client{},
-	//	Url:    baseUrl,
-	//}
-	//collector.Collect()
-	//fmt.Println(collector.RawHtml)
-
+	wg.Wait()
+	for _, v := range collectorList {
+		//fmt.Println(v.Data.RawHtml)
+		fmt.Println(strings.ReplaceAll(v.Data.RawHtml, "\n", ""))
+		//fmt.Println(v.Data.ParsedData)
+	}
+	for _, v := range dataList {
+		fmt.Println(v.RawHtml)
+		fmt.Println(v.ParsedData)
+	}
 	//时间统计
 	end := time.Since(start)
 	fmt.Println(end)
